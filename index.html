@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1209">
+  <title>西游杀</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 开始界面 -->
+  <div id="start-screen">
+    <div class="title-wrap">
+      <h1>西&nbsp;游&nbsp;杀</h1>
+      <p class="subtitle">取经路上，斗法降妖 · 单机身份对战</p>
+    </div>
+
+    <div class="setup-row">
+      <label>玩家人数：</label>
+      <select id="num-players">
+        <option value="4">4 人</option>
+        <option value="5" selected>5 人</option>
+        <option value="6">6 人</option>
+        <option value="7">7 人</option>
+        <option value="8">8 人</option>
+      </select>
+    </div>
+
+    <p class="pick-hint">选择你的出场武将：</p>
+    <div id="char-grid"></div>
+
+    <div class="start-btns">
+      <button id="btn-start" class="btn big">确定出战</button>
+      <button id="btn-random" class="btn big ghost">随机一局</button>
+    </div>
+
+    <div class="rules">
+      <details>
+        <summary>玩法说明</summary>
+        <p><b>身份：</b>主公(唐僧队核心)、忠臣(保护主公)、反贼(击杀主公)、内奸(最后独存)。身份随机分配且隐藏，主公身份公开。</p>
+        <p><b>胜利：</b>取经队——消灭所有反贼和内奸；反贼——击杀主公；内奸——其他人皆亡后与主公单挑取胜。</p>
+        <p><b>回合：</b>判定 → 摸牌(2张) → 出牌 → 弃牌(手牌不超过体力值)。</p>
+        <p><b>基本牌：</b>杀(攻击范围内角色)、闪(抵消杀)、桃(回血/救人)。</p>
+        <p><b>锦囊：</b>化斋(摸2)、斗法、顺手牵羊、过河拆桥、蟠桃盛会(群体回血)、群妖来袭/飞沙走石(群体伤害)、紧箍咒、天雷、无懈可击。</p>
+        <p><b>装备：</b>武器(扩大攻击范围)、莲花宝甲(防具)、±1坐骑(改变距离)。</p>
+      </details>
+    </div>
+  </div>
+
+  <!-- 游戏界面 -->
+  <div id="game-screen" style="display:none">
+    <div id="phase-info"></div>
+    <div id="opponents"></div>
+    <div id="log-wrap"><div id="log"></div></div>
+    <div id="self-area"></div>
+    <div id="hand-wrap"><div id="hand"></div></div>
+    <div id="prompt-bar" style="display:none"></div>
+  </div>
+
+  <!-- 模态框 -->
+  <div id="modal" style="display:none">
+    <div class="modal-card">
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/flow.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
