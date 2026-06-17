@@ -4,11 +4,10 @@ name: Deploy to GitHub Pages
 # 一次性设置：仓库 Settings → Pages → Build and deployment → Source 选 "GitHub Actions"。
 # 之后推送到本分支会自动部署。
 
+# 说明：本工作流仅在你把 Settings → Pages → Source 设为 "GitHub Actions" 后才能成功。
+# 若你用更简单的「Deploy from a branch」方式发布，则无需本工作流，可忽略它。
+# 改为手动触发，避免在 Pages 未启用时每次推送都失败。
 on:
-  push:
-    branches:
-      - claude/xiyou-sha-mobile-game-kiupzn
-      - main
   workflow_dispatch:
 
 permissions:
