@@ -66,11 +66,29 @@
     </div>
   </div>
 
+  <!-- 飞牌 & 浮动数字覆盖层 -->
+  <div id="card-fly-overlay"></div>
+
+  <!-- 音效开关 -->
+  <button id="sfx-toggle" title="音效开关">🔊</button>
+
+  <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/flow.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    // 初始化音效 & 开关
+    SFX.init();
+    document.getElementById('sfx-toggle').addEventListener('click', function() {
+      SFX.enabled = !SFX.enabled;
+      this.textContent = SFX.enabled ? '🔊' : '🔇';
+    });
+    // iOS 需要用户首次触摸后才能启动 AudioContext
+    document.addEventListener('touchstart', () => SFX.resume(), { once: true });
+    document.addEventListener('click', () => SFX.resume(), { once: true });
+  </script>
 </body>
 </html>

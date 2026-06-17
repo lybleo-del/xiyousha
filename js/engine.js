@@ -153,7 +153,10 @@ class Game {
       if (c) { player.hand.push(c); got.push(c); }
     }
     if (!silent && got.length) this.log(`${player.name} 摸了 ${got.length} 张牌`);
-    if (this.ui) this.ui.render();
+    if (this.ui) {
+      if (!silent && got.length) SFX.draw();
+      this.ui.render();
+    }
     return got;
   }
 
@@ -285,7 +288,7 @@ class Game {
     if (!card) return null;
     this.discardCardObj(card);
     this.log(`${player.name} ${reason}判定：${SUIT_SYMBOL[card.suit]}${pointLabel(card.point)} ${card.name}`);
-    if (this.ui) this.ui.render();
+    if (this.ui) { this.ui.animateJudge(); this.ui.render(); }
     return card;
   }
 
@@ -295,7 +298,7 @@ class Game {
     if (!target.alive || amount <= 0) return;
     target.hp -= amount;
     this.log(`${target.name} 受到 ${amount} 点${opts.tag || ''}伤害（剩余体力 ${Math.max(target.hp, 0)}）`);
-    if (this.ui) this.ui.render();
+    if (this.ui) { this.ui.animateDamage(target, amount); this.ui.render(); }
 
     // 受伤后技能
     if (target.character.onAfterDamaged) target.character.onAfterDamaged(this, target, source, amount);
@@ -338,7 +341,7 @@ class Game {
         this.playCardFromHand(p, card);
         target.hp += 1;
         this.log(`${p.name} 使用「桃」救了 ${target.name}（体力 ${target.hp}）`);
-        if (this.ui) this.ui.render();
+        if (this.ui) { this.ui.animateHeal(target, 1); this.ui.render(); }
       }
       if (target.hp > 0) break;
     }
@@ -361,6 +364,7 @@ class Game {
   async killPlayer(target, source) {
     target.alive = false;
     target.identityRevealed = true;
+    if (this.ui) this.ui.animateDeath(target);
     this.log(`☠ ${target.name}（${target.character.name}·${IDENTITY[target.identity].name}）阵亡`);
     // 弃置其所有牌
     target.hand.forEach(c => this.discardCardObj(c));

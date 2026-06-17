@@ -22,6 +22,7 @@ class UI {
     this.el.modal = document.getElementById('modal');
     this.el.modalBody = document.getElementById('modal-body');
     this.el.phaseInfo = document.getElementById('phase-info');
+    this.el.flyOverlay = document.getElementById('card-fly-overlay');
   }
 
   bind(game) { this.game = game; }
@@ -79,6 +80,7 @@ class UI {
     g.players.forEach((p, i) => {
       if (p.isHuman) return;
       const card = document.createElement('div');
+      card.dataset.pid = p.id;
       card.className = 'opp' + (p.alive ? '' : ' dead') +
         (g.players[g.turnIndex] === p ? ' active' : '') +
         (this.mode === 'target' && this._targetCands && this._targetCands.includes(p) ? ' targetable' : '');
@@ -118,8 +120,15 @@ class UI {
 
     // 手牌
     this.el.hand.innerHTML = '';
-    me.hand.forEach(c => {
+    const prevCount = this._prevHandCount || 0;
+    const newCards = me.hand.length - prevCount;
+    this._prevHandCount = me.hand.length;
+    me.hand.forEach((c, idx) => {
       const div = this.makeCardEl(c);
+      if (newCards > 0 && idx >= prevCount) {
+        div.classList.add('drawing');
+        div.style.animationDelay = `${(idx - prevCount) * 40}ms`;
+      }
       const canPlay = isMyTurn && this.mode === 'play' && this.isPlayable(me, c).playable;
       if (this.mode === 'play' && isMyTurn) {
         if (canPlay) {
@@ -228,9 +237,16 @@ class UI {
     const info = this.isPlayable(me, card);
     if (!info.playable) return;
 
+    // 找到被点击的牌的 DOM 位置用于飞牌动画
+    const cardEls = [...this.el.hand.children];
+    const cardIdx = me.hand.findIndex(c => c.uid === card.uid);
+    const fromEl = cardEls[cardIdx] || null;
+
     if (info.target === 'none' || info.target === 'self' || info.target === 'all') {
       this._busy = true;
       this.mode = 'idle';
+      this.animateCardFly(card, fromEl, null);
+      this.playSoundForCard(card);
       const targets = info.target === 'self' ? [me] : [];
       await this.game.useCard(me, card, targets);
       this._busy = false;
@@ -240,11 +256,12 @@ class UI {
     }
 
     if (info.target === 'single') {
-      // 进入选目标模式
       const t = await this.promptTarget(me, info.cands, `为「${card.name}」选择目标`);
       if (!t) { this.mode = 'play'; this.render(); return; }
       this._busy = true;
       this.mode = 'idle';
+      this.animateCardFly(card, fromEl, t);
+      this.playSoundForCard(card);
       await this.game.useCard(me, card, [t]);
       this._busy = false;
       if (!this.game.over && me.alive) { this.mode = 'play'; this.setPrompt('你的出牌阶段：点击可用的牌出牌', true); }
@@ -396,6 +413,8 @@ class UI {
     else if (camp === '反贼') win = (me.identity === 'fanzei');
     else if (camp === '内奸') win = (me.identity === 'neijian');
 
+    setTimeout(() => win ? SFX.win() : SFX.lose(), 300);
+
     const idents = this.game.players.map(p =>
       `${p.name}·${p.character.name}：${IDENTITY[p.identity].name}${p.alive ? '' : '（阵亡）'}`).join('<br>');
 
@@ -406,5 +425,131 @@ class UI {
        <hr><div style="font-size:12px;text-align:left;line-height:1.7">${idents}</div>`,
       [{ label: '再来一局', cls: 'yes', onClick: () => location.reload() }]
     );
+  }
+
+  /* ============================================================
+   * 音效 & 动画 API（供引擎调用）
+   * ============================================================ */
+
+  /* 根据牌类型播放音效 */
+  playSoundForCard(card) {
+    SFX.resume();
+    if (card.basicKind === 'sha') SFX.sha();
+    else if (card.basicKind === 'shan') SFX.shan();
+    else if (card.basicKind === 'tao') SFX.tao();
+    else if (card.type === 'equip') SFX.equip();
+    else if (card.key === 'wuxie') SFX.wuxie();
+    else SFX.trick();
+  }
+
+  /* 找到某个 player 对应的 DOM 元素（自己用 self-area，对手用 opp） */
+  getPlayerEl(player) {
+    if (player.isHuman) return this.el.self;
+    return this.el.opponents.querySelector(`[data-pid="${player.id}"]`);
+  }
+
+  /* 受伤动画 + 浮动数字 */
+  animateDamage(player, amount) {
+    const el = this.getPlayerEl(player);
+    if (el) {
+      el.classList.remove('anim-damage');
+      void el.offsetWidth; // reflow 强制重绘
+      el.classList.add('anim-damage');
+      el.addEventListener('animationend', () => el.classList.remove('anim-damage'), { once: true });
+    }
+    this.animateFloatNum(player, `-${amount}`, '#ff5a5a');
+    SFX.damage();
+  }
+
+  /* 回血动画 + 浮动数字 */
+  animateHeal(player, amount) {
+    const el = this.getPlayerEl(player);
+    if (el) {
+      el.classList.remove('anim-heal');
+      void el.offsetWidth;
+      el.classList.add('anim-heal');
+      el.addEventListener('animationend', () => el.classList.remove('anim-heal'), { once: true });
+    }
+    this.animateFloatNum(player, `+${amount}`, '#5ad15a');
+    SFX.tao();
+  }
+
+  /* 阵亡动画 */
+  animateDeath(player) {
+    const el = this.getPlayerEl(player);
+    if (el) {
+      el.classList.add('anim-death');
+    }
+    SFX.death();
+  }
+
+  /* 技能激活金光 */
+  animateSkill(player) {
+    const el = this.getPlayerEl(player);
+    if (el) {
+      el.classList.remove('anim-skill');
+      void el.offsetWidth;
+      el.classList.add('anim-skill');
+      el.addEventListener('animationend', () => el.classList.remove('anim-skill'), { once: true });
+    }
+  }
+
+  /* 浮动数字（伤害/回血） */
+  animateFloatNum(player, text, color) {
+    const el = this.getPlayerEl(player);
+    if (!el || !this.el.flyOverlay) return;
+    const rect = el.getBoundingClientRect();
+    const span = document.createElement('div');
+    span.className = 'float-num';
+    span.textContent = text;
+    span.style.color = color;
+    span.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+    span.style.top = (rect.top + rect.height / 2 - 20) + 'px';
+    this.el.flyOverlay.appendChild(span);
+    span.addEventListener('animationend', () => span.remove(), { once: true });
+  }
+
+  /* 飞牌动画：从手牌元素飞向目标角色（或屏幕中央） */
+  animateCardFly(card, fromEl, targetPlayer) {
+    if (!fromEl || !this.el.flyOverlay) return;
+    const from = fromEl.getBoundingClientRect();
+
+    // 目标位置
+    let toX = window.innerWidth / 2 - 31;
+    let toY = window.innerHeight / 2 - 45;
+    if (targetPlayer) {
+      const tEl = this.getPlayerEl(targetPlayer);
+      if (tEl) {
+        const tr = tEl.getBoundingClientRect();
+        toX = tr.left + tr.width / 2 - 31;
+        toY = tr.top + tr.height / 2 - 45;
+      }
+    }
+
+    const fly = document.createElement('div');
+    fly.className = 'fly-card' + (isRed(card.suit) ? ' red-card' : '');
+    fly.textContent = card.name;
+    fly.style.left = from.left + 'px';
+    fly.style.top = from.top + 'px';
+    // CSS 变量传位移量
+    const tx = toX - from.left;
+    const ty = toY - from.top;
+    fly.style.setProperty('--tx', tx + 'px');
+    fly.style.setProperty('--ty', ty + 'px');
+    this.el.flyOverlay.appendChild(fly);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { fly.classList.add('flying'); });
+    });
+    fly.addEventListener('animationend', () => fly.remove(), { once: true });
+  }
+
+  /* 判定音效 */
+  animateJudge() { SFX.judge(); }
+
+  /* 回合开始 */
+  animateTurnStart(player) {
+    SFX.turnStart();
+    if (player.isHuman) this.animateSkill(player);
   }
 }

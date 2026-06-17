@@ -52,6 +52,7 @@ Game.prototype.askWuxieChain = async function (originCard, targetPlayer, sourceP
 Game.prototype.resolveSha = async function (source, target, shaCard, opts) {
   opts = opts || {};
   this.log(`${source.name} 对 ${target.name} 使用「杀」`);
+  if (this.ui && !source.isHuman) SFX.sha();
 
   // 目标响应闪
   const dodged = await this.requestShan(target, source, shaCard);
@@ -113,6 +114,7 @@ Game.prototype.requestShan = async function (target, source, shaCard) {
     ? await this.ui.promptCard(target, ['shan'], '选择「闪」', { asShan: true })
     : shans[0];
   if (!card) return false;
+  if (this.ui && !target.isHuman) SFX.shan();
   this.playCardFromHand(target, card);
   return true;
 };
@@ -129,21 +131,29 @@ Game.prototype.useCard = async function (player, card, targets) {
       return;
     }
     if (card.basicKind === 'tao') {
-      // 出牌阶段回血
       this.playCardFromHand(player, card);
-      if (player.hp < player.maxHp) { player.hp += 1; this.log(`${player.name} 使用「桃」回复 1 点体力`); }
-      if (this.ui) this.ui.render();
+      if (player.hp < player.maxHp) {
+        player.hp += 1;
+        this.log(`${player.name} 使用「桃」回复 1 点体力`);
+        if (this.ui) { this.ui.animateHeal(player, 1); this.ui.render(); }
+      } else {
+        if (this.ui) this.ui.render();
+      }
       return;
     }
     return;
   }
 
   if (card.type === 'equip') {
+    if (this.ui && !player.isHuman) SFX.equip();
     this.equipCard(player, card);
     return;
   }
 
   if (card.type === 'trick') {
+    if (this.ui && !player.isHuman) {
+      card.key === 'wuxie' ? SFX.wuxie() : SFX.trick();
+    }
     if (card.trickKind === 'delayed') {
       await this.useDelayedTrick(player, card, targets);
       return;
@@ -160,7 +170,7 @@ Game.prototype.equipCard = function (player, card) {
   if (player.equip[slot]) this.discardCardObj(player.equip[slot]);
   player.equip[slot] = card;
   this.log(`${player.name} 装备了「${card.name}」`);
-  if (this.ui) this.ui.render();
+  if (this.ui) { if (!player.isHuman) this.ui.animateSkill(player); this.ui.render(); }
 };
 
 /* 延时锦囊：紧箍咒 / 天雷 */
@@ -303,6 +313,7 @@ Game.prototype.runTurn = async function (player) {
   player._huashenUsed = false;
 
   this.log(`—— ${player.name}（${player.character.name}）的回合 ——`);
+  if (this.ui) this.ui.animateTurnStart(player);
 
   // 1. 判定阶段
   await this.phaseJudge(player);
