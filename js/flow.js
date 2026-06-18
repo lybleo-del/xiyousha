@@ -58,13 +58,13 @@ Game.prototype.askWuxieChain = async function (originCard, targetPlayer, sourceP
 Game.prototype.resolveSha = async function (source, target, shaCard, opts) {
   opts = opts || {};
   this.log(`${source.name} 对 ${target.name} 使用「杀」`);
-  if (this.ui) { if (!source.isHuman) SFX.sha(); await this.pause(300); }
+  if (this.ui) { if (!source.isHuman) SFX.sha(); await this.pause(600); }
 
   // 目标响应闪
   const dodged = await this.requestShan(target, source, shaCard);
   if (dodged) {
     this.log(`${target.name} 打出「闪」抵消了「杀」`);
-    if (this.ui) { this.ui.showAction(`${target.name}：闪`, null); await this.pause(500); }
+    if (this.ui) { this.ui.showAction(`${target.name}：闪 ✦`, { basicKind: 'shan' }); await this.pause(800); }
     return;
   }
 
@@ -323,7 +323,7 @@ Game.prototype.runTurn = async function (player) {
   if (this.ui) {
     this.ui.animateTurnStart(player);
     this.ui.showAction(`${player.name} · ${player.character.name} 的回合`, null, 'turn');
-    await this.pause(750);
+    await this.pause(1200);
   }
 
   // 1. 判定阶段

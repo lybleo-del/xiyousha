@@ -5,31 +5,65 @@
 
 const SFX = {
   ctx: null,
+  master: null,
   enabled: true,
+  unlocked: false,
+  silentEl: null,
 
   init() {
+    if (this.ctx) return;
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // 主音量节点（整体音量偏大，移动端外放也能听清）
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 1.6;
+      this.master.connect(this.ctx.destination);
     } catch (e) { this.enabled = false; }
   },
 
+  /* 在用户手势内调用：创建/恢复音频，并播放静音缓冲完成 iOS 解锁。
+   * 同时启动一个静音 <audio> 循环，尽量让 iOS 走媒体声道（绕开静音键）。*/
+  unlock() {
+    if (!this.ctx) this.init();
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (!this.unlocked) {
+      // 播放一段极短静音缓冲，解锁 Web Audio
+      try {
+        const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start(0);
+      } catch (e) {}
+      // 静音 audio 元素：有助于在部分 iOS 设备上忽略静音键
+      try {
+        if (!this.silentEl) {
+          const a = document.createElement('audio');
+          a.loop = true; a.setAttribute('playsinline', '');
+          // 一段极短的静音 wav（base64）
+          a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+          a.volume = 0.01;
+          this.silentEl = a;
+        }
+        this.silentEl.play().catch(() => {});
+      } catch (e) {}
+      this.unlocked = true;
+    }
+  },
+
   resume() {
+    if (!this.ctx) this.init();
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   },
 
-  /* 通用工具：创建增益节点 */
-  _gain(vol) {
-    const g = this.ctx.createGain();
-    g.gain.value = vol;
-    g.connect(this.ctx.destination);
-    return g;
-  },
+  _dest() { return this.master || this.ctx.destination; },
 
   /* 振荡器音符 */
   _osc(type, freq, start, dur, vol, fadeStart, fadeEnd) {
     if (!this.ctx || !this.enabled) return;
     const g = this.ctx.createGain();
-    g.connect(this.ctx.destination);
+    g.connect(this._dest());
     g.gain.setValueAtTime(vol, start);
     g.gain.exponentialRampToValueAtTime(fadeEnd || 0.001, start + dur);
     const o = this.ctx.createOscillator();
@@ -54,8 +88,16 @@ const SFX = {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(vol, start);
     g.gain.exponentialRampToValueAtTime(0.001, start + dur);
-    src.connect(lp); lp.connect(g); g.connect(this.ctx.destination);
+    src.connect(lp); lp.connect(g); g.connect(this._dest());
     src.start(start); src.stop(start + dur + 0.05);
+  },
+
+  /* 明显的测试音（点击 🔊 时） */
+  test() {
+    if (!this.ctx) this.init();
+    this.resume();
+    const t = this.ctx.currentTime;
+    [523, 659, 784].forEach((f, i) => this._osc('sine', f, t + i * 0.12, 0.3, 0.5));
   },
 
   /* ── 出杀：金属撞击 + 高频扫频 ── */

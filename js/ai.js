@@ -113,10 +113,10 @@ const AI = {
       const tname = targets.length && targets[0] !== me ? ` ➜ ${targets[0].name}` : '';
       g.ui.flyCardFromPlayer(me, card, targets[0] || null);
       g.ui.showAction(`${me.name}：${card.name}${tname}`, card);
-      await g.pause(720);
+      await g.pause(1150);
     }
     await g.useCard(me, card, targets);
-    if (g.ui) await g.pause(420);
+    if (g.ui) await g.pause(650);
   },
 
 

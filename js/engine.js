@@ -298,7 +298,7 @@ class Game {
     if (!target.alive || amount <= 0) return;
     target.hp -= amount;
     this.log(`${target.name} 受到 ${amount} 点${opts.tag || ''}伤害（剩余体力 ${Math.max(target.hp, 0)}）`);
-    if (this.ui) { this.ui.animateDamage(target, amount); this.ui.render(); await this.pause(550); }
+    if (this.ui) { this.ui.animateDamage(target, amount); this.ui.render(); await this.pause(950); }
 
     // 受伤后技能
     if (target.character.onAfterDamaged) target.character.onAfterDamaged(this, target, source, amount);

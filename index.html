@@ -74,7 +74,7 @@
 
   <!-- 音效开关 & 速度 -->
   <button id="sfx-toggle" title="音效开关">🔊</button>
-  <button id="speed-toggle" title="播放速度">⏩1x</button>
+  <button id="speed-toggle" title="播放速度">🐢 中速</button>
 
   <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
@@ -84,27 +84,29 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
   <script>
-    // 音效开关
+    // 音效开关：开启时播放明显的测试音，确认能听到
     document.getElementById('sfx-toggle').addEventListener('click', function() {
       SFX.enabled = !SFX.enabled;
       this.textContent = SFX.enabled ? '🔊' : '🔇';
-      if (SFX.enabled) { SFX.resume(); SFX.draw(); }
+      if (SFX.enabled) { SFX.unlock(); SFX.test(); }
     });
-    // 速度切换 1x → 2x → 4x → 1x
+    // 速度切换：慢速(0.6) → 中速(1) → 快速(1.8) 循环
+    const SPEEDS = [
+      { v: 0.6, label: '🐢 慢速' },
+      { v: 1,   label: '🐢 中速' },
+      { v: 1.8, label: '🐇 快速' },
+    ];
+    let speedIdx = 1;
     document.getElementById('speed-toggle').addEventListener('click', function() {
-      const next = { 1: 2, 2: 4, 4: 1 };
-      const cur = (window.UI_INSTANCE && window.UI_INSTANCE.speed) || 1;
-      const s = next[cur] || 1;
-      if (window.UI_INSTANCE) window.UI_INSTANCE.setSpeed(s);
-      this.textContent = '⏩' + s + 'x';
+      speedIdx = (speedIdx + 1) % SPEEDS.length;
+      const s = SPEEDS[speedIdx];
+      if (window.UI_INSTANCE) window.UI_INSTANCE.speed = s.v;
+      this.textContent = s.label;
     });
-    // iOS/移动端：AudioContext 必须在用户手势内创建并解锁，故延后到首次交互
-    function unlockAudio() {
-      if (!SFX.ctx) SFX.init();
-      SFX.resume();
-    }
-    document.addEventListener('touchend', unlockAudio);
-    document.addEventListener('click', unlockAudio);
+    // iOS/移动端：AudioContext 必须在用户手势内创建并解锁
+    function unlockAudio() { SFX.unlock(); }
+    document.addEventListener('touchend', unlockAudio, true);
+    document.addEventListener('click', unlockAudio, true);
   </script>
 </body>
 </html>
