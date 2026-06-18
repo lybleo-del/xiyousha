@@ -323,10 +323,12 @@ Game.prototype.runTurn = async function (player) {
   if (this.ui) {
     this.ui.animateTurnStart(player);
     this.ui.showAction(`${player.name} · ${player.character.name} 的回合`, null, 'turn');
+    this.ui.setPhaseInfo(`${player.name} 的回合`);
     await this.pause(1200);
   }
 
   // 1. 判定阶段
+  if (this.ui) this.ui.setPhaseInfo(`${player.name} · 判定阶段`);
   await this.phaseJudge(player);
   if (!player.alive || this.over) return;
 
@@ -336,10 +338,12 @@ Game.prototype.runTurn = async function (player) {
 
   // 2. 准备阶段技能（观音甘露）——简单处理
   // 3. 摸牌阶段
+  if (this.ui) this.ui.setPhaseInfo(`${player.name} · 摸牌阶段`);
   await this.phaseDraw(player);
   if (this.over) return;
 
   // 4. 出牌阶段
+  if (this.ui) this.ui.setPhaseInfo(`${player.name} · 出牌阶段${player.isHuman ? ' — 你的回合' : ''}`);
   if (!skipPlay) {
     await this.phasePlay(player);
   } else {
@@ -348,6 +352,7 @@ Game.prototype.runTurn = async function (player) {
   if (this.over) return;
 
   // 5. 弃牌阶段
+  if (this.ui) this.ui.setPhaseInfo(`${player.name} · 弃牌阶段`);
   await this.phaseDiscard(player);
   if (player.character.onEndDiscard) player.character.onEndDiscard(this, player);
 };

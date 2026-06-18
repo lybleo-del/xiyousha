@@ -73,16 +73,20 @@ body { user-select: none; -webkit-user-select: none; }
   height: 100%; display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) 6px calc(4px + env(safe-area-inset-bottom));
 }
-#phase-info { height: 0; }
+#phase-info {
+  flex: 0 0 auto;
+  font-size: 11px; color: #c79a4b; text-align: center;
+  padding: 2px 0 0; letter-spacing: .5px; height: auto; min-height: 0;
+}
 
 #opponents {
-  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 2px;
-  justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 2px;
+  justify-content: center; flex: 0 0 auto;
 }
 .opp {
   background: linear-gradient(160deg, #271d11, #1a140c);
   border: 1px solid #3e301c; border-radius: 9px;
-  padding: 6px 7px; width: calc(33.33% - 6px); min-width: 96px;
+  padding: 5px 6px; width: calc(33.33% - 5px); min-width: 90px;
   font-size: 11px; position: relative; transition: border-color .15s;
 }
 .opp.active { border-color: #e8c873; box-shadow: 0 0 10px rgba(220,160,60,.45); }
@@ -107,10 +111,10 @@ body { user-select: none; -webkit-user-select: none; }
 .hp-dot.off { background: #4a3a2a; }
 
 /* 日志 */
-#log-wrap { flex: 1; overflow: hidden; margin: 4px 0; }
+#log-wrap { flex: 0 0 auto; max-height: 96px; overflow: hidden; margin: 3px 0; }
 #log {
-  height: 100%; overflow-y: auto; font-size: 12px; line-height: 1.65;
-  background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 10px;
+  max-height: 96px; height: 96px; overflow-y: auto; font-size: 11.5px; line-height: 1.6;
+  background: rgba(0,0,0,.25); border-radius: 8px; padding: 5px 10px;
   color: #cbb98e;
 }
 .log-line { border-bottom: 1px dashed rgba(255,255,255,.04); padding: 1px 0; }
@@ -118,19 +122,20 @@ body { user-select: none; -webkit-user-select: none; }
 /* 自己区域 */
 #self-area {
   background: linear-gradient(160deg, #2e2212, #1c1409);
-  border: 1px solid #5a4626; border-radius: 12px; padding: 8px 10px; margin-bottom: 6px;
+  border: 1px solid #5a4626; border-radius: 12px; padding: 7px 10px; margin-bottom: 5px;
+  flex: 0 0 auto;
 }
-.self-info { display: flex; gap: 10px; align-items: center; }
-.avatar.big { font-size: 40px; }
-.self-name { font-size: 15px; font-weight: 700; }
+.self-info { display: flex; gap: 8px; align-items: center; }
+.avatar.big { font-size: 36px; }
+.self-name { font-size: 14px; font-weight: 700; }
 .self-name .title { font-size: 11px; color: #b39b6e; font-weight: 400; }
-.skill-mini { font-size: 11px; color: #e8c873; margin-top: 2px; }
+.skill-mini { font-size: 11px; color: #e8c873; margin-top: 1px; }
 
 /* 手牌 */
-#hand-wrap { overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
-#hand { display: flex; gap: 6px; padding: 2px; min-height: 96px; }
+#hand-wrap { overflow-x: auto; overflow-y: visible; padding: 2px 2px 6px; flex: 0 0 auto; }
+#hand { display: flex; gap: 5px; padding: 0; min-height: 92px; }
 .card {
-  flex: 0 0 auto; width: 62px; height: 90px; border-radius: 8px;
+  flex: 0 0 auto; width: 60px; height: 88px; border-radius: 8px;
   background: #f5edd8; color: #222; position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: 2px solid #d8c89a; transition: transform .1s, box-shadow .15s;
@@ -139,10 +144,10 @@ body { user-select: none; -webkit-user-select: none; }
 .card.black { color: #222; }
 .card.type-equip { background: #e7e0ef; }
 .card.type-trick { background: #e6efe0; }
-.card-corner { position: absolute; top: 3px; left: 4px; font-size: 12px; font-weight: 700; }
-.card-name { font-size: 18px; font-weight: 800; }
-.card-kind { font-size: 9px; color: #777; position: absolute; bottom: 4px; }
-.card.playable { border-color: #e8a33f; box-shadow: 0 -2px 12px rgba(232,160,60,.6); transform: translateY(-6px); }
+.card-corner { position: absolute; top: 3px; left: 4px; font-size: 11px; font-weight: 700; }
+.card-name { font-size: 17px; font-weight: 800; }
+.card-kind { font-size: 9px; color: #777; position: absolute; bottom: 3px; }
+.card.playable { border-color: #e8a33f; box-shadow: 0 -2px 12px rgba(232,160,60,.6); transform: translateY(-7px); }
 .card.disabled { opacity: .55; }
 
 /* 提示条 */

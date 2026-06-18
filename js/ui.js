@@ -25,6 +25,10 @@ class UI {
     this.el.flyOverlay = document.getElementById('card-fly-overlay');
   }
 
+  setPhaseInfo(text) {
+    if (this.el.phaseInfo) this.el.phaseInfo.textContent = text;
+  }
+
   bind(game) { this.game = game; }
 
   /* ---------------- 日志 ---------------- */
