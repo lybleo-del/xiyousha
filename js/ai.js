@@ -56,32 +56,32 @@ const AI = {
 
       // 1) 装备武器/坐骑（提升能力）
       const equip = me.hand.find(c => c.type === 'equip' && this.wantEquip(g, me, c));
-      if (equip) { await g.useCard(me, equip); acted = true; continue; }
+      if (equip) { await this.aiAct(g, me, equip); acted = true; continue; }
 
       // 2) 化斋（无中生有）手牌不多时
       const huazhai = me.hand.find(c => c.key === 'huazhai');
-      if (huazhai && me.hand.length <= 4) { await g.useCard(me, huazhai, [me]); acted = true; continue; }
+      if (huazhai && me.hand.length <= 4) { await this.aiAct(g, me, huazhai, [me]); acted = true; continue; }
 
       // 3) 受伤且有桃，先回血到安全线
       const tao = me.hand.find(c => c.basicKind === 'tao');
-      if (tao && me.hp < Math.min(2, me.maxHp)) { await g.useCard(me, tao); acted = true; continue; }
+      if (tao && me.hp < Math.min(2, me.maxHp)) { await this.aiAct(g, me, tao); acted = true; continue; }
 
       // 4) AOE：群妖来袭 / 飞沙走石（敌多于友时）
       const aoe = me.hand.find(c => c.key === 'qunyao' || c.key === 'feisha');
-      if (aoe && this.aoeWorthIt(g, me)) { await g.useCard(me, aoe); acted = true; continue; }
+      if (aoe && this.aoeWorthIt(g, me)) { await this.aiAct(g, me, aoe); acted = true; continue; }
 
       // 5) 顺手牵羊 / 过河拆桥 对敌人
       const disrupt = me.hand.find(c => c.key === 'shunshou' || c.key === 'chaiqiao');
       if (disrupt) {
         const t = this.pickDisruptTarget(g, me, disrupt);
-        if (t) { await g.useCard(me, disrupt, [t]); acted = true; continue; }
+        if (t) { await this.aiAct(g, me, disrupt, [t]); acted = true; continue; }
       }
 
       // 6) 紧箍咒 对敌人
       const jingu = me.hand.find(c => c.key === 'jingu');
       if (jingu) {
         const t = this.enemies(g, me).find(e => !e.judgeZone.some(z => z.key === 'jingu'));
-        if (t) { await g.useCard(me, jingu, [t]); acted = true; continue; }
+        if (t) { await this.aiAct(g, me, jingu, [t]); acted = true; continue; }
       }
 
       // 7) 斗法 对敌人（手里杀多时）
@@ -89,7 +89,7 @@ const AI = {
       const shaCount = me.hand.filter(c => c.basicKind === 'sha').length;
       if (doufa && shaCount >= 1) {
         const t = this.enemies(g, me).sort((a, b) => a.hp - b.hp)[0];
-        if (t) { await g.useCard(me, doufa, [t]); acted = true; continue; }
+        if (t) { await this.aiAct(g, me, doufa, [t]); acted = true; continue; }
       }
 
       // 8) 杀：攻击范围内的敌人
@@ -99,12 +99,26 @@ const AI = {
         const targets = this.enemies(g, me)
           .filter(e => g.inAttackRange(me, e))
           .sort((a, b) => a.hp - b.hp);
-        if (targets.length) { await g.useCard(me, sha, [targets[0]]); acted = true; continue; }
+        if (targets.length) { await this.aiAct(g, me, sha, [targets[0]]); acted = true; continue; }
       }
 
       // 9) 天雷给自己上（黑桃概率赌博）——一般丢给下家，简单处理：直接放自己很危险，跳过
     }
   },
+
+  /* AI 执行一次出牌：先飞牌+播报+停顿，让玩家看清，再结算 */
+  async aiAct(g, me, card, targets) {
+    targets = targets || [];
+    if (g.ui) {
+      const tname = targets.length && targets[0] !== me ? ` ➜ ${targets[0].name}` : '';
+      g.ui.flyCardFromPlayer(me, card, targets[0] || null);
+      g.ui.showAction(`${me.name}：${card.name}${tname}`, card);
+      await g.pause(720);
+    }
+    await g.useCard(me, card, targets);
+    if (g.ui) await g.pause(420);
+  },
+
 
   wantEquip(g, me, card) {
     if (card.equipKind === 'weapon') {

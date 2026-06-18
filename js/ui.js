@@ -552,4 +552,67 @@ class UI {
     SFX.turnStart();
     if (player.isHuman) this.animateSkill(player);
   }
+
+  /* ---------------- 节奏停顿 ---------------- */
+  // speed: 播放速度倍率（1 / 2 / 4），值越大停顿越短
+  beat(ms) {
+    const speed = this.speed || 1;
+    return new Promise(r => setTimeout(r, ms / speed));
+  }
+
+  setSpeed(s) {
+    this.speed = s;
+    const btn = document.getElementById('speed-toggle');
+    if (btn) btn.textContent = `⏩${s}x`;
+  }
+
+  /* ---------------- 中央动作播报横幅 ---------------- */
+  showAction(text, card, type) {
+    const banner = document.getElementById('action-banner');
+    if (!banner) return;
+    let cls = 'action-banner show';
+    if (type === 'turn') cls += ' turn-banner';
+    if (card) {
+      if (card.basicKind === 'sha') cls += ' b-sha';
+      else if (card.basicKind === 'shan') cls += ' b-shan';
+      else if (card.basicKind === 'tao') cls += ' b-tao';
+      else if (card.type === 'trick') cls += ' b-trick';
+      else if (card.type === 'equip') cls += ' b-equip';
+    }
+    banner.className = cls;
+    banner.textContent = text;
+    // 重置动画
+    banner.style.animation = 'none';
+    void banner.offsetWidth;
+    banner.style.animation = '';
+  }
+
+  /* 让某玩家"打出"一张牌飞向目标（用于 AI 出牌可视化） */
+  flyCardFromPlayer(player, card, targetPlayer) {
+    const fromEl = this.getPlayerEl(player);
+    if (!fromEl || !this.el.flyOverlay) return;
+    const from = fromEl.getBoundingClientRect();
+
+    let toX = window.innerWidth / 2 - 31;
+    let toY = window.innerHeight / 2 - 45;
+    if (targetPlayer) {
+      const tEl = this.getPlayerEl(targetPlayer);
+      if (tEl) {
+        const tr = tEl.getBoundingClientRect();
+        toX = tr.left + tr.width / 2 - 31;
+        toY = tr.top + tr.height / 2 - 45;
+      }
+    }
+
+    const fly = document.createElement('div');
+    fly.className = 'fly-card' + (isRed(card.suit) ? ' red-card' : '');
+    fly.innerHTML = `<div style="font-size:11px">${SUIT_SYMBOL[card.suit]}${pointLabel(card.point)}</div>${card.name}`;
+    fly.style.left = (from.left + from.width / 2 - 31) + 'px';
+    fly.style.top = (from.top + from.height / 2 - 45) + 'px';
+    fly.style.setProperty('--tx', (toX - (from.left + from.width / 2 - 31)) + 'px');
+    fly.style.setProperty('--ty', (toY - (from.top + from.height / 2 - 45)) + 'px');
+    this.el.flyOverlay.appendChild(fly);
+    requestAnimationFrame(() => requestAnimationFrame(() => fly.classList.add('flying')));
+    fly.addEventListener('animationend', () => fly.remove(), { once: true });
+  }
 }

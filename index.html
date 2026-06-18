@@ -69,8 +69,12 @@
   <!-- 飞牌 & 浮动数字覆盖层 -->
   <div id="card-fly-overlay"></div>
 
-  <!-- 音效开关 -->
+  <!-- 中央动作播报 -->
+  <div id="action-banner" class="action-banner"></div>
+
+  <!-- 音效开关 & 速度 -->
   <button id="sfx-toggle" title="音效开关">🔊</button>
+  <button id="speed-toggle" title="播放速度">⏩1x</button>
 
   <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
@@ -80,15 +84,27 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
   <script>
-    // 初始化音效 & 开关
-    SFX.init();
+    // 音效开关
     document.getElementById('sfx-toggle').addEventListener('click', function() {
       SFX.enabled = !SFX.enabled;
       this.textContent = SFX.enabled ? '🔊' : '🔇';
+      if (SFX.enabled) { SFX.resume(); SFX.draw(); }
     });
-    // iOS 需要用户首次触摸后才能启动 AudioContext
-    document.addEventListener('touchstart', () => SFX.resume(), { once: true });
-    document.addEventListener('click', () => SFX.resume(), { once: true });
+    // 速度切换 1x → 2x → 4x → 1x
+    document.getElementById('speed-toggle').addEventListener('click', function() {
+      const next = { 1: 2, 2: 4, 4: 1 };
+      const cur = (window.UI_INSTANCE && window.UI_INSTANCE.speed) || 1;
+      const s = next[cur] || 1;
+      if (window.UI_INSTANCE) window.UI_INSTANCE.setSpeed(s);
+      this.textContent = '⏩' + s + 'x';
+    });
+    // iOS/移动端：AudioContext 必须在用户手势内创建并解锁，故延后到首次交互
+    function unlockAudio() {
+      if (!SFX.ctx) SFX.init();
+      SFX.resume();
+    }
+    document.addEventListener('touchend', unlockAudio);
+    document.addEventListener('click', unlockAudio);
   </script>
 </body>
 </html>

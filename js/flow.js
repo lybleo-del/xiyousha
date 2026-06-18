@@ -10,6 +10,12 @@ Game.prototype.playCardFromHand = function (player, card) {
   if (this.ui) this.ui.render();
 };
 
+/* 节奏停顿：让玩家看清每个动作。无 UI（模拟）时立即返回 */
+Game.prototype.pause = function (ms) {
+  if (!this.ui) return Promise.resolve();
+  return this.ui.beat(ms);
+};
+
 /* ---------------- 无懈可击 连锁 ----------------
  * 当一张锦囊生效前，按座位顺序询问所有人是否使用无懈可击。
  * 偶数次无懈 = 生效；奇数次 = 抵消。
@@ -52,12 +58,13 @@ Game.prototype.askWuxieChain = async function (originCard, targetPlayer, sourceP
 Game.prototype.resolveSha = async function (source, target, shaCard, opts) {
   opts = opts || {};
   this.log(`${source.name} 对 ${target.name} 使用「杀」`);
-  if (this.ui && !source.isHuman) SFX.sha();
+  if (this.ui) { if (!source.isHuman) SFX.sha(); await this.pause(300); }
 
   // 目标响应闪
   const dodged = await this.requestShan(target, source, shaCard);
   if (dodged) {
     this.log(`${target.name} 打出「闪」抵消了「杀」`);
+    if (this.ui) { this.ui.showAction(`${target.name}：闪`, null); await this.pause(500); }
     return;
   }
 
@@ -313,7 +320,11 @@ Game.prototype.runTurn = async function (player) {
   player._huashenUsed = false;
 
   this.log(`—— ${player.name}（${player.character.name}）的回合 ——`);
-  if (this.ui) this.ui.animateTurnStart(player);
+  if (this.ui) {
+    this.ui.animateTurnStart(player);
+    this.ui.showAction(`${player.name} · ${player.character.name} 的回合`, null, 'turn');
+    await this.pause(750);
+  }
 
   // 1. 判定阶段
   await this.phaseJudge(player);

@@ -49,7 +49,9 @@ function startScreen() {
 
 async function launchGame(charId, numPlayers) {
   const ui = new UI();
+  ui.speed = 1;
   UI_INSTANCE = ui;
+  window.UI_INSTANCE = ui;
   const game = new Game({ ui, numPlayers });
   ui.bind(game);
   game.setup(charId);
