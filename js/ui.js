@@ -152,8 +152,39 @@ class UI {
         div.classList.add('playable');
         div.onclick = () => this.resolveSelect(c);
       }
+      this._attachCardInfo(div, c);
       this.el.hand.appendChild(div);
     });
+  }
+
+  /* 长按（或右键）手牌查看该牌详细属性 */
+  _attachCardInfo(div, card) {
+    let timer = null;
+    const start = () => {
+      this._suppressClick = false;
+      timer = setTimeout(() => { this._suppressClick = true; this.showCardInfo(card); }, 450);
+    };
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    div.addEventListener('touchstart', start, { passive: true });
+    div.addEventListener('touchend', cancel);
+    div.addEventListener('touchmove', cancel);
+    div.addEventListener('mousedown', start);
+    div.addEventListener('mouseup', cancel);
+    div.addEventListener('mouseleave', cancel);
+    div.addEventListener('contextmenu', e => { e.preventDefault(); cancel(); this.showCardInfo(card); });
+  }
+
+  /* 单张牌详情弹窗 */
+  showCardInfo(card) {
+    if (this.el.modal.style.display === 'flex') return; // 有其它弹窗时不打断
+    const suit = SUIT_SYMBOL[card.suit];
+    const pt = pointLabel(card.point);
+    this.openModal(
+      `<h3>${card.name} <span style="font-size:13px;color:#9c8c6e">· ${this.kindLabel(card)}</span></h3>
+       <p style="color:${isRed(card.suit) ? '#e07a6a' : '#aaa'};font-size:13px;margin:4px 0">${suit}${pt}</p>
+       <p style="font-size:13px;line-height:1.6">${card.desc || '（暂无说明）'}</p>`,
+      [{ label: '知道了', cls: 'yes', onClick: () => this.closeModal() }]
+    );
   }
 
   makeCardEl(c) {
@@ -220,7 +251,7 @@ class UI {
     return new Promise(resolve => {
       this.mode = 'play';
       this._endPhaseResolve = resolve;
-      this.setPrompt(`你的出牌阶段：点击可用的牌出牌`, true);
+      this.setPrompt(`你的出牌阶段：点牌出牌（长按牌看说明）`, true);
       this.render();
     });
   }
@@ -236,6 +267,7 @@ class UI {
   }
 
   async onPlayCardClick(card) {
+    if (this._suppressClick) { this._suppressClick = false; return; }
     if (this._busy) return;
     const me = this.game.players[0];
     const info = this.isPlayable(me, card);
@@ -254,7 +286,7 @@ class UI {
       const targets = info.target === 'self' ? [me] : [];
       await this.game.useCard(me, card, targets);
       this._busy = false;
-      if (!this.game.over && me.alive) { this.mode = 'play'; this.setPrompt('你的出牌阶段：点击可用的牌出牌', true); }
+      if (!this.game.over && me.alive) { this.mode = 'play'; this.setPrompt('你的出牌阶段：点牌出牌（长按牌看说明）', true); }
       this.render();
       return;
     }
@@ -268,7 +300,7 @@ class UI {
       this.playSoundForCard(card);
       await this.game.useCard(me, card, [t]);
       this._busy = false;
-      if (!this.game.over && me.alive) { this.mode = 'play'; this.setPrompt('你的出牌阶段：点击可用的牌出牌', true); }
+      if (!this.game.over && me.alive) { this.mode = 'play'; this.setPrompt('你的出牌阶段：点牌出牌（长按牌看说明）', true); }
       this.render();
     }
   }
@@ -321,7 +353,10 @@ class UI {
     });
   }
 
-  resolveSelect(card) { this._finishSelect(card); }
+  resolveSelect(card) {
+    if (this._suppressClick) { this._suppressClick = false; return; }
+    this._finishSelect(card);
+  }
 
   _finishSelect(card) {
     if (this._selectResolve) {

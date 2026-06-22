@@ -72,9 +72,13 @@
   <!-- 中央动作播报 -->
   <div id="action-banner" class="action-banner"></div>
 
-  <!-- 音效开关 & 速度 -->
-  <button id="sfx-toggle" title="音效开关">🔊</button>
-  <button id="speed-toggle" title="播放速度">🐢 中速</button>
+  <!-- 控制按钮组 -->
+  <div id="top-controls">
+    <button id="speed-toggle" title="播放速度">🐢 中速</button>
+    <button id="music-toggle" title="背景音乐">🎵</button>
+    <button id="sfx-toggle" title="音效开关">🔊</button>
+    <button id="guide-toggle" title="牌库说明">📖</button>
+  </div>
 
   <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
@@ -84,17 +88,39 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
   <script>
-    // 音效开关：开启时播放明显的测试音，确认能听到
+    // 音效开关：第一次点确保开启并播放测试音；之后切换开/关
     document.getElementById('sfx-toggle').addEventListener('click', function() {
+      SFX.unlock();
+      if (!SFX._userToggled) {
+        SFX._userToggled = true;
+        SFX.enabled = true;
+        this.textContent = '🔊';
+        SFX.test();
+        return;
+      }
       SFX.enabled = !SFX.enabled;
       this.textContent = SFX.enabled ? '🔊' : '🔇';
-      if (SFX.enabled) { SFX.unlock(); SFX.test(); }
+      if (SFX.enabled) SFX.test();
     });
-    // 速度切换：慢速(0.6) → 中速(1) → 快速(1.8) 循环
+
+    // 背景音乐开关
+    document.getElementById('music-toggle').addEventListener('click', function() {
+      SFX.unlock();
+      SFX.musicEnabled = !SFX.musicEnabled;
+      if (SFX.musicEnabled) { SFX.startBgm(); this.classList.remove('off'); this.title = '背景音乐：开'; }
+      else { SFX.stopBgm(); this.classList.add('off'); this.title = '背景音乐：关'; }
+    });
+
+    // 牌库说明
+    document.getElementById('guide-toggle').addEventListener('click', function() {
+      showCardGuide();
+    });
+
+    // 速度切换：慢速 → 中速 → 快速 循环（整体已放慢一倍）
     const SPEEDS = [
-      { v: 0.6, label: '🐢 慢速' },
-      { v: 1,   label: '🐢 中速' },
-      { v: 1.8, label: '🐇 快速' },
+      { v: 0.3, label: '🐢 慢速' },
+      { v: 0.5, label: '🐢 中速' },
+      { v: 0.9, label: '🐇 快速' },
     ];
     let speedIdx = 1;
     document.getElementById('speed-toggle').addEventListener('click', function() {
@@ -103,8 +129,12 @@
       if (window.UI_INSTANCE) window.UI_INSTANCE.speed = s.v;
       this.textContent = s.label;
     });
-    // iOS/移动端：AudioContext 必须在用户手势内创建并解锁
-    function unlockAudio() { SFX.unlock(); }
+
+    // iOS/移动端：AudioContext 必须在用户手势内创建并解锁；并尝试启动背景乐
+    function unlockAudio() {
+      SFX.unlock();
+      if (SFX.musicEnabled && !SFX.bgmOn) SFX.startBgm();
+    }
     document.addEventListener('touchend', unlockAudio, true);
     document.addEventListener('click', unlockAudio, true);
   </script>

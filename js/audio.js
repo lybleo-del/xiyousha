@@ -229,4 +229,71 @@ const SFX = {
       this._osc('triangle', f / 2, t + i * 0.2, 0.3, 0.15);
     });
   },
+
+  /* ============================================================
+   * 背景音乐：五声音阶古风循环（实时合成，无需音频文件）
+   * 不受“音效开关(enabled)”影响，由独立的 🎵 按钮控制。
+   * ============================================================ */
+  musicEnabled: true,   // 是否允许播放背景乐
+  bgmOn: false,         // 当前是否正在播放
+  _bgmTimer: null,
+  _bgmStep: 0,
+  _bgmGain: null,
+
+  startBgm() {
+    if (!this.ctx) this.init();
+    if (!this.ctx) return;
+    this.resume();
+    if (this.bgmOn || !this.musicEnabled) return;
+    this.bgmOn = true;
+
+    // 背景乐独立音量（做铺底，低于音效）
+    if (!this._bgmGain) {
+      this._bgmGain = this.ctx.createGain();
+      this._bgmGain.gain.value = 0.5;
+      this._bgmGain.connect(this._dest());
+    }
+
+    // C 大调五声音阶（宫商角徵羽），跨两个八度
+    const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+    // 一段循环旋律（音阶下标）
+    const phrase = [0, 2, 4, 2, 3, 1, 2, 4, 5, 4, 2, 3, 1, 0, 2, 1];
+    this._bgmStep = 0;
+
+    const tick = () => {
+      if (!this.bgmOn || !this.ctx) return;
+      const t = this.ctx.currentTime;
+      const idx = this._bgmStep % phrase.length;
+      const f = scale[phrase[idx]];
+      // 主旋律：拨弦感的三角波
+      this._bgmNote('triangle', f, t, 0.85, 0.13);
+      // 每小节起拍加一个低八度铺底
+      if (idx % 4 === 0) this._bgmNote('sine', f / 2, t, 1.7, 0.07);
+      // 偶尔点缀一个高八度泛音
+      if (idx % 8 === 6) this._bgmNote('sine', f * 2, t, 0.6, 0.04);
+      this._bgmStep++;
+      this._bgmTimer = setTimeout(tick, 460);
+    };
+    tick();
+  },
+
+  stopBgm() {
+    this.bgmOn = false;
+    if (this._bgmTimer) { clearTimeout(this._bgmTimer); this._bgmTimer = null; }
+  },
+
+  _bgmNote(type, freq, start, dur, vol) {
+    if (!this.ctx) return;
+    const g = this.ctx.createGain();
+    g.connect(this._bgmGain || this._dest());
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.linearRampToValueAtTime(vol, start + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    const o = this.ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = freq;
+    o.connect(g);
+    o.start(start);
+    o.stop(start + dur + 0.05);
+  },
 };

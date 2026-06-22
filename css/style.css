@@ -289,19 +289,19 @@ body { user-select: none; -webkit-user-select: none; }
 }
 .float-num { animation: float-up 0.9s ease-out forwards; }
 
-/* 音效开关按钮 */
-#sfx-toggle {
+/* 顶部控制按钮组 */
+#top-controls {
   position: fixed; top: calc(6px + env(safe-area-inset-top)); right: 8px;
-  z-index: 150; background: rgba(0,0,0,.5); border: 1px solid #4a3a22;
-  border-radius: 20px; padding: 4px 10px; font-size: 18px; cursor: pointer;
-  color: #e8c873;
+  z-index: 150; display: flex; gap: 6px; align-items: center;
 }
-#speed-toggle {
-  position: fixed; top: calc(6px + env(safe-area-inset-top)); right: 56px;
-  z-index: 150; background: rgba(0,0,0,.5); border: 1px solid #4a3a22;
-  border-radius: 20px; padding: 4px 10px; font-size: 13px; cursor: pointer;
-  color: #e8c873; font-weight: 700;
+#top-controls button {
+  background: rgba(0,0,0,.55); border: 1px solid #4a3a22;
+  border-radius: 20px; padding: 4px 9px; font-size: 15px; cursor: pointer;
+  color: #e8c873; font-weight: 700; line-height: 1.4;
 }
+#top-controls button:active { transform: scale(0.92); }
+#top-controls button.off { opacity: .4; }
+#speed-toggle { font-size: 13px; }
 
 /* ── 中央动作播报横幅 ── */
 .action-banner {
